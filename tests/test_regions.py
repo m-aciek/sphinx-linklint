@@ -3,7 +3,7 @@ from docutils import nodes
 from docutils.utils import new_document
 from helpers import text_and_id
 
-from sphinx_linklint.regions import Region, find_regions
+from sphinx_linklint.regions import Region, RegionFinder, find_regions
 from sphinx_linklint.rsthelp import parse_rst
 
 
@@ -150,7 +150,7 @@ def test_skip_overwritten_line_extents(monkeypatch, last_line: int) -> None:
     section.extend([first, last])
     doctree += section
 
-    def unexpected_astext():
+    def unexpected_astext() -> None:
         pytest.fail("An overwritten line extent should not be computed")
 
     monkeypatch.setattr(section, "astext", unexpected_astext)
@@ -159,3 +159,12 @@ def test_skip_overwritten_line_extents(monkeypatch, last_line: int) -> None:
     assert list(find_regions(doctree)) == [
         region("module", "example", start=1, end=last_line + 1),
     ]
+
+
+def test_last_line_without_numbered_nodes() -> None:
+    doctree = new_document("test.rst")
+    doctree += nodes.paragraph(text="Unnumbered paragraph.")
+    finder = RegionFinder()
+
+    assert list(finder.find_regions(doctree)) == []
+    assert finder.last_line == 0
